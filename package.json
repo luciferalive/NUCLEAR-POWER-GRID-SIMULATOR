@@ -1,0 +1,13 @@
+{
+  "name": "nuclear-power-grid-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser-based nuclear power plant management simulator (fictional, educational models)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.json && node --test tests/*.test.mjs",
+    "serve": "python3 -m http.server 8080 -d docs"
+  },
+  "devDependencies": { "typescript": "^5.6.0" }
+}
