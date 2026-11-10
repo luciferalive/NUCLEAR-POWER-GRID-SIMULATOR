@@ -195,7 +195,7 @@ export type Action =
   | { type: "setSpeed"; speed: number } | { type: "togglePause" }
   | { type: "setRod"; value: number } | { type: "setAutoRods"; on: boolean }
   | { type: "setPump"; id: string; on?: boolean; speed?: number }
-  | { type: "setSetpoint"; mw: number } | { type: "setFans"; value: number }
+  | { type: "setSetpoint"; mw: number } | { type: "setFans"; value: number } | { type: "setIntake"; open: boolean }
   | { type: "scram"; reason?: string } | { type: "resetScram" } | { type: "setProtection"; on: boolean }
   | { type: "tripTurbine" } | { type: "resetTurbine" } | { type: "setBreaker"; closed: boolean }
   | { type: "setMarket"; autoBuy?: boolean; sellSurplus?: boolean; reserveMW?: number }

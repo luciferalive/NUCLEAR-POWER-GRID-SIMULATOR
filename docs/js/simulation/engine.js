@@ -63,6 +63,10 @@ export function dispatch(s, a) {
             t.setpointMW = clamp(a.mw, 0, cap);
             return ok(`Turbine set point ${t.setpointMW.toFixed(0)} MW`);
         }
+        case "setIntake":
+            s.cooling.intakeOpen = a.open;
+            log(s, a.open ? "info" : "warning", "cooling", a.open ? "Cooling water intake opened." : "Cooling water intake CLOSED: cooling is severely reduced.");
+            return ok();
         case "setFans":
             s.cooling.fans = clamp(a.value, 0, 1);
             return ok();

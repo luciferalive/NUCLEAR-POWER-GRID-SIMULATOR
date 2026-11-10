@@ -35,6 +35,7 @@ export function dispatch(s: GameState, a: Action): Result {
     case "setAutoRods": r.autoRods = a.on; if (a.on) log(s, "info", "reactor", "Automatic rod control ON: rods follow the turbine set point."); else log(s, "notice", "reactor", "Manual rod control: you are controlling reactor power."); return ok();
     case "setPump": { const p = r.pumps.find((x) => x.id === a.id); if (!p) return no("Unknown pump"); if (a.on !== undefined) { p.on = a.on; log(s, "info", "reactor", `${p.id} ${a.on ? "started" : "stopped"}.`); } if (a.speed !== undefined) p.speed = clamp(a.speed, 0.2, 1); return ok(); }
     case "setSetpoint": { const cap = GEN_NAMEPLATE * (1 + bonus(s, "cap")); t.setpointMW = clamp(a.mw, 0, cap); return ok(`Turbine set point ${t.setpointMW.toFixed(0)} MW`); }
+    case "setIntake": s.cooling.intakeOpen = a.open; log(s, a.open ? "info" : "warning", "cooling", a.open ? "Cooling water intake opened." : "Cooling water intake CLOSED: cooling is severely reduced."); return ok();
     case "setFans": s.cooling.fans = clamp(a.value, 0, 1); return ok();
     case "scram": doScram(s, a.reason ?? "Manual SCRAM by operator"); return ok("SCRAM");
     case "resetScram": return fromErr(resetScram(s), "SCRAM reset");

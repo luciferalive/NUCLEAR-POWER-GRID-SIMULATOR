@@ -1,15 +1,32 @@
 # Nuclear Power Grid Simulator
 
-A browser-based nuclear power plant management game. You are the plant director: run a (fictional, simplified) reactor, sell electricity to industry, manage money, staff and maintenance, and survive emergencies.
+A free, open-source browser game where you run a **fictional** nuclear power company: keep the plant safe, keep customers supplied, and keep the company profitable.
 
-All physics and numbers are **fictional educational models**, not real plant data or operating procedures.
+**Everything is a simplified, made-up model for fun and learning. It is not engineering guidance, and none of the numbers or procedures are real operating data.**
 
-**Status: work in progress.** The simulation engine (reactor, turbine, cooling, grid, market, contracts, finance, maintenance, staff, events, research, saves) is built and tested. The interface is being added.
+## Play it
+Open `docs/index.html` through any web server, or enable GitHub Pages (Settings → Pages → branch `main`, folder `/docs`) and open the page link.
 
-## Run / build
+No installation is needed to play. Progress is saved in your browser (IndexedDB); you can also export and import save files.
+
+## What is in the game (Stage 1 = "Version 1")
+18 screens, all driven by one shared simulation: Overview, Facility Map, Reactor Room, Control Room, Turbine Hall, Cooling, Electrical Grid, Electricity Market, Industrial Customers (contracts, negotiation, priorities, invoices), Finance, Maintenance, Personnel, Research, Safety & Emergency, Reports (CSV export), Upgrades, Settings & Save Manager, Tutorial & Manual.
+
+Linked on purpose: changing the turbine set point moves reactor power, heat, generation, sales and revenue; a failed pump cuts coolant flow; understaffing raises wear; late deliveries cost penalties and reputation.
+
+Five modes (Career, Sandbox, Challenge, Crisis, Realistic) and five difficulty levels.
+
+## Honest status
+Done and tested: simulation engine (15 automated tests), all 18 screens (browser smoke-tested for errors, set points, offers, SCRAM, save and load), procedural sound.
+
+Known gaps:
+- The **V2 "Living World" expansion** (world map, regions, transmission, competitors, construction, batteries, news, achievements) is **not built yet**.
+- Buying supplies is not used in this version.
+- Charts are empty during the first simulated hours of a new game while history builds up.
+- Not yet tested on phones or in browsers other than Chromium.
+
+## Develop
 ```
-npm install        # only installs TypeScript
-npm run build      # compiles src/ to docs/js
-npm test           # builds and runs the engine tests
-npm run serve      # http://localhost:8080
+npm test      # compiles TypeScript (global tsc) and runs the engine tests
 ```
+Source is in `src/`, compiled output in `docs/js/` (committed so GitHub Pages can serve it).
