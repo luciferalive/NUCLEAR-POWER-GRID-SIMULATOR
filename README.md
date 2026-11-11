@@ -1,6 +1,6 @@
 <div align="center">
 
-# ☢️ NUCLEAR POWER GRID SIMULATOR
+# ☢️ NUCLEAR POWER GRID SIMULATOR.
 
 ### Run a power company. Keep the lights on. Don't melt down the profits.
 
