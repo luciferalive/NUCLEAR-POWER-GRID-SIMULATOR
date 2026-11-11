@@ -2,8 +2,8 @@ import { addLedger, log } from "./util.js";
 export const TECHS = [
     { id: "gen-eff", name: "High-efficiency generator windings", category: "Generator efficiency", cost: 4_500_000, days: 45, text: "+1.2 points of thermal-to-electric efficiency." },
     { id: "grid-hv", name: "High-voltage grid connection", category: "Grid infrastructure", cost: 5_500_000, days: 60, text: "+20 % export capacity and lower transmission losses." },
-    { id: "storage", name: "Grid-scale energy storage research", category: "Energy storage", cost: 3_000_000, days: 50, text: "Unlocks battery storage (World update). Lets you shift energy to peak hours." },
-    { id: "renewable", name: "Renewable integration", category: "Renewable energy", cost: 2_500_000, days: 40, text: "Better forecasts of weather-driven competitors (World update)." },
+    { id: "storage", name: "Grid-scale energy storage research", category: "Energy storage", cost: 3_000_000, days: 50, text: "Unlocks battery storage projects in Construction. Shift energy to peak hours." },
+    { id: "renewable", name: "Renewable integration", category: "Renewable energy", cost: 2_500_000, days: 40, text: "Unlocks solar and wind projects and gives more accurate regional weather forecasts." },
     { id: "ind-mgmt", name: "Industrial energy management", category: "Industrial energy management", cost: 2_200_000, days: 35, text: "+2 % price on contracts and spot sales through smarter dispatch." },
     { id: "reliability", name: "Equipment reliability programme", category: "Equipment reliability", cost: 3_200_000, days: 45, text: "-20 % equipment wear." },
     { id: "predictive", name: "Predictive maintenance analytics", category: "Predictive maintenance", cost: 3_800_000, days: 50, text: "-25 % failure probability and days-to-failure forecasts.", needs: "reliability" },

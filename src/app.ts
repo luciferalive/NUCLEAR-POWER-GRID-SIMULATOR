@@ -11,9 +11,10 @@ import * as P1 from "./ui/pages/p1.js";
 import * as P2 from "./ui/pages/p2.js";
 import * as P3 from "./ui/pages/p3.js";
 import * as P4 from "./ui/pages/p4.js";
+import * as P5 from "./ui/pages/p5.js";
 import { ui } from "./ui/state.js";
 
-const PAGES: Page[] = [P1.overview, P1.map, P1.reactor, P1.control, P1.turbine, P1.cooling, P2.grid, P2.market, P2.customers, P2.finance, P3.maintenance, P3.personnel, P3.research, P3.safety, P3.reports, P3.upgrades, P4.settings, P4.tutorial];
+const PAGES: Page[] = [P1.overview, P1.map, P1.reactor, P1.control, P1.turbine, P1.cooling, P2.grid, P2.market, P2.customers, P2.finance, P3.maintenance, P3.personnel, P3.research, P3.safety, P3.reports, P3.upgrades, P4.settings, P4.tutorial, P5.worldmap, P5.command, P5.network, P5.expenses, P5.procurement, P5.construction, P5.economy, P5.news, P5.regulator, P5.achievements];
 
 let backend: Backend;
 try { backend = typeof indexedDB !== "undefined" ? new IdbBackend() : new MemoryBackend(); } catch { backend = new MemoryBackend(); }
@@ -29,7 +30,7 @@ async function doSave(id: string) { try { await saves.save(id, store.state); P4.
 function shell() {
   $("#app")!.innerHTML = `<header id="hdr"></header><nav id="nav"></nav><main id="main"></main><footer id="ftr"></footer>`;
   const c = document.createElement("div"); c.id = "coach"; document.body.appendChild(c);
-  $("#nav")!.innerHTML = PAGES.map((p) => `<a href="#${p.id}" data-page="${p.id}"><i>${p.icon}</i>${esc(p.title)}</a>`).join("");
+  $("#nav")!.innerHTML = PAGES.map((p) => (p.id === "worldmap" ? '<div class="navhead">LIVING WORLD</div>' : "") + `<a href="#${p.id}" data-page="${p.id}"><i>${p.icon}</i>${esc(p.title)}</a>`).join("");
 }
 function header() {
   const s = store.state, st = s.settings, g = s.grid;
@@ -120,6 +121,7 @@ document.addEventListener("click", (ev) => {
   if (t.dataset.cmd) { void shellCmd(t.dataset.cmd); return; }
   const a = JSON.parse(t.dataset.act!) as Record<string, unknown>;
   if (t.dataset.from) { const inp = document.getElementById(t.dataset.from) as HTMLInputElement; a[t.dataset.key!] = Number(inp.value); ui.offerPrice[String(a.offerId)] = Number(inp.value); }
+  if (t.dataset.collect) { const form = document.getElementById(t.dataset.collect)!; const cmd = { ...((a.cmd as object) ?? {}) } as Record<string, unknown>; form.querySelectorAll<HTMLInputElement>("[data-f]").forEach((el) => { cmd[el.dataset.f!] = el.type === "number" ? Number(el.value) : el.value; }); a.cmd = cmd; }
   if (a.type === "app") { void appCmd(a); return; }
   if (a.type === "setTab") { ui.tab[String(a.key)] = String(a.value); if (a.key === "report") ui.reportKind = String(a.value); render(true); return; }
   if (a.type === "csv") { csvOf(String(a.what)); return; }
@@ -147,7 +149,8 @@ async function shellCmd(c: string) {
 function fieldAction(el: HTMLElement, value: number | boolean): Action {
   const a = JSON.parse(el.dataset.ain ?? el.dataset.chk ?? el.dataset.chg!) as Record<string, unknown>;
   if (el.dataset.skey) a.key = el.dataset.skey;
-  a[el.dataset.key!] = typeof value === "number" ? value * Number(el.dataset.scale ?? 1) : value;
+  const v = el.dataset.str ? String((el as HTMLInputElement).value) : typeof value === "number" ? value * Number(el.dataset.scale ?? 1) : value;
+  const path = el.dataset.key!.split("."); let o = a; for (let i = 0; i < path.length - 1; i++) o = o[path[i]] as Record<string, unknown>; o[path[path.length - 1]] = v;
   return a as unknown as Action;
 }
 document.addEventListener("input", (ev) => { const el = ev.target as HTMLInputElement; if (el.dataset.ain) store.act(fieldAction(el, Number(el.value))); });

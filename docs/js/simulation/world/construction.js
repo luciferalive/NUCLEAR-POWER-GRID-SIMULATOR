@@ -120,9 +120,6 @@ function complete(s, p) {
         case "substation": {
             const r = w.regions.find((x) => x.id === p.region);
             r.tieCapMW += 120;
-            const b = w.lines.find((l) => l.id === "B-" + p.region);
-            if (b)
-                b.capMW += 120;
             break;
         }
         case "transformer": {

@@ -25,7 +25,7 @@ function makeWeather(s) {
 }
 export function createWorld(s) {
     const nodes = [...SUBSTATIONS, ...STATIC_NODES, { id: OUR_PLANT.id, kind: "nuclear", name: "Our Nuclear Power Plant", region: "Central", x: OUR_PLANT.x, y: OUR_PLANT.y, owner: "us" },
-        { id: "ext-grid", kind: "external", name: "External Grid Interconnector", region: "South", x: 960, y: 960, owner: "external" }];
+        { id: "ext-grid", kind: "external", name: "External Grid Interconnector", region: "East", x: 955, y: 160, owner: "external" }];
     const competitors = COMPETITORS.map((c) => { nodes.push({ id: c.node, kind: c.tech === "nuclear" ? "nuclear" : c.tech, name: c.name, region: c.region, x: c.x, y: c.y, owner: c.id, ref: c.id }); return { id: c.id, name: c.name, tech: c.tech, region: c.region, capMW: c.capMW, outMW: c.capMW * 0.8, cash: c.cash, marginalCost: c.marginalCost, node: c.node, bidPrice: c.marginalCost * 1.2, share: 0, status: "online", statusUntil: 0, profitDay: 0 }; });
     for (const c of s.customers)
         nodes.push({ id: "cust-" + c.id, kind: KIND_FOR[c.industry] ?? "factory", name: c.name, region: regionOf(c.x, c.y), x: c.x, y: c.y, owner: "customer", ref: c.id });
@@ -316,16 +316,21 @@ function stepRegions(s) {
     // simplified balance: surplus regions export to deficit regions through the tie lines (3 % lost on the way);
     // what is still missing nationally is covered by the external interconnector, up to its capacity. Beyond that: a real shortage.
     const net = w.regions.map((r) => r.genMW + r.deliveredByUsMW - r.demandMW);
-    const surplus = net.reduce((a, x) => a + Math.max(0, x), 0);
+    const tie = gridCap;
+    const exp = w.regions.map((r, i) => Math.min(Math.max(0, net[i]), tie(r))); // a region can only export as much as its tie line carries
+    const surplus = exp.reduce((a, x) => a + x, 0);
     let deficit = 0;
-    w.regions.forEach((r, i) => { r.importMW = Math.min(Math.max(0, -net[i]), r.id === "Central" ? 600 : r.tieCapMW); deficit += r.importMW; });
+    w.regions.forEach((r, i) => { r.importMW = Math.min(Math.max(0, -net[i]), tie(r)); deficit += r.importMW; });
     const moved = Math.min(surplus * 0.97, deficit), k = deficit > 0 ? moved / deficit : 0;
-    w.regions.forEach((r, i) => { r.importMW *= k; r.exportMW = surplus > 0 ? (Math.max(0, net[i]) / surplus) * moved / 0.97 : 0; r.lossMW = r.exportMW * 0.03; });
-    const rest = w.regions.map((r, i) => Math.max(0, -net[i] - r.importMW)), restTot = rest.reduce((a, x) => a + x, 0), ext = Math.min(restTot, EXT_CAP), kx = restTot > 0 ? ext / restTot : 0;
-    w.regions.forEach((r, i) => { r.importMW += rest[i] * kx; r.shortageMW = rest[i] * (1 - kx); r.priceMul = 1 + 3 * r.shortageMW / Math.max(1, r.demandMW); });
+    w.regions.forEach((r, i) => { r.importMW *= k; r.exportMW = surplus > 0 ? (exp[i] / surplus) * moved / 0.97 : 0; r.lossMW = r.exportMW * 0.03; });
+    const room = w.regions.map((r) => Math.max(0, tie(r) - r.importMW)), rest = w.regions.map((r, i) => Math.min(Math.max(0, -net[i] - r.importMW), room[i]));
+    const restTot = rest.reduce((a, x) => a + x, 0), ext = Math.min(restTot, EXT_CAP), kx = restTot > 0 ? ext / restTot : 0;
+    w.regions.forEach((r, i) => { r.importMW += rest[i] * kx; r.shortageMW = Math.max(0, -net[i] - r.importMW); r.priceMul = 1 + 3 * r.shortageMW / Math.max(1, r.demandMW); });
     w.flags.extImportMW = ext;
 }
 const EXT_CAP = 750;
+/** Regional import/export capacity of the shared grid (our own delivery capacity into a region is smaller: tieCapMW). */
+export const gridCap = (r) => (r.id === "Central" ? 700 : r.tieCapMW * 2.2);
 // ------------------------------------------------------------------------------------------------ transmission lines
 function stepLines(s, dt) {
     const w = s.world, g = s.grid, hours = dt / 60;
@@ -361,6 +366,7 @@ function stepLines(s, dt) {
         else if (l.kind === "backbone") {
             const reg = l.id.startsWith("B-") ? w.regions.find((r) => r.id === l.id.slice(2)) : null;
             if (reg) {
+                l.capMW = gridCap(reg);
                 l.flowMW = Math.max(reg.importMW, reg.exportMW);
                 l.lossMW = reg.lossMW;
             }

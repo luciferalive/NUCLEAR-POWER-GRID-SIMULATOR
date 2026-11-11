@@ -58,7 +58,7 @@ export function progressProjects(s: GameState) {
 function complete(s: GameState, p: Project) {
   const w = s.world; p.status = "done"; f_(s, p);
   switch (p.kind) {
-    case "substation": { const r = w.regions.find((x) => x.id === p.region)!; r.tieCapMW += 120; const b = w.lines.find((l) => l.id === "B-" + p.region); if (b) b.capMW += 120; break; }
+    case "substation": { const r = w.regions.find((x) => x.id === p.region)!; r.tieCapMW += 120; break; }
     case "transformer": { const r = w.regions.find((x) => x.id === p.region)!; r.tieCapMW += 60; w.extraCap.transformer = 1; break; }
     case "line-upgrade": { const l = w.lines.find((x) => x.id === p.targetId)!; l.capMW += 40; l.condition = 100; break; }
     case "connection": { const l = w.lines.find((x) => x.id === p.targetId)!; l.status = "ok"; l.condition = 100; break; }
