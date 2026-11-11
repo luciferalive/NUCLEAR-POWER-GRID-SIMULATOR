@@ -140,7 +140,7 @@ test("saves: round trip, rename, delete, export/import, migration of an unversio
   const text = await m.export("1"); const imp = importText(text); assert.equal(imp.state.t, s.t);
   await m.remove("1"); assert.equal((await m.list()).length, 1);
   const old = JSON.parse(JSON.stringify(s)); delete old.version; delete old.flags; delete old.hourly;
-  const mig = migrate(old); assert.equal(mig.version, 1); assert.ok(mig.flags.staffRatio === 1 && Array.isArray(mig.hourly));
+  const mig = migrate(old); assert.equal(mig.version, 2); assert.ok(mig.flags.staffRatio === 1 && Array.isArray(mig.hourly));
   assert.throws(() => importText("{nope"), /not valid JSON/); assert.throws(() => importText('{"app":"x"}'), /not a save/);
   const loaded = back; run(loaded, 100); assert.ok(loaded.t > s.t, "a loaded game keeps running");
 });

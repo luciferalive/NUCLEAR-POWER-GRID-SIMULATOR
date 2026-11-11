@@ -1,5 +1,7 @@
 import { BASE_AUX, ETA0, EXPORT_CAP, FAN_MW, GEN_EFF, GEN_NAMEPLATE, PNOM, PUMP_MW, WATER_PER_MWT_REJECT } from "./constants.js";
 import { stepReactor } from "./reactorModel.js";
+import { batteryCharge, lineCap, regionCapNow, supplyAssist, worldBonus } from "./world/world.js";
+import { regionOf } from "./world/data.js";
 import { clamp, eq, health, log, relax, setAlarm } from "./util.js";
 export const statusFactor = (s, id) => { const e = eq(s, id); return !e ? 1 : e.status === "failed" || e.status === "maintenance" || e.status === "offline" ? 0 : e.status === "degraded" ? 0.75 : 1; };
 /** Upgrade / research multipliers (see research.ts for the list). */
@@ -7,7 +9,7 @@ export function bonus(s, key) {
     let m = 0;
     for (const id of [...s.upgrades, ...s.research.done])
         m += BONUS[id]?.[key] ?? 0;
-    return m;
+    return m + worldBonus(s, key);
 }
 export const BONUS = {
     "gen-eff": { eta: 0.012 }, "turbine-uprate": { cap: 0.08 }, "cooling-tech": { cooling: 0.15 }, "grid-hv": { export: 0.2, loss: -0.004 },
@@ -84,19 +86,28 @@ export function stepPlant(s, dt) {
 export function allocate(s, dt, spotSoldFn) {
     const g = s.grid, m = s.market;
     const deliverable = Math.max(0, g.netMW - g.lossMW);
-    let avail = Math.min(deliverable, g.exportCapMW);
+    const base = Math.min(deliverable, g.exportCapMW);
     const active = s.contracts.filter((c) => c.active && !c.terminated).sort((a, b) => a.priority - b.priority || b.price - a.price);
+    // what the network can carry to each customer: the customer's own line and the regional substation
+    const regRem = regionCapNow(s);
+    const reachable = (c) => { const u = s.customers.find((x) => x.id === c.customerId); return Math.min(c.demandMW, lineCap(s, c.customerId), regRem[regionOf(u.x, u.y)] ?? Infinity); };
+    const wantsTotal = active.reduce((a, c) => a + reachable(c), 0);
+    const assist = supplyAssist(s, wantsTotal - base, m.spotPrice, dt);
+    const avail = base + assist.renewMW + assist.gasMW + assist.batMW;
     let contracted = 0, shortfallTotal = 0;
     const wantReserve = Math.min(m.reserveMW, avail);
-    let pool = avail; // MW available to contracts (reserve only withheld from spot sales)
+    let pool = avail;
     for (const c of active) {
+        const u = s.customers.find((x) => x.id === c.customerId), reg = regionOf(u.x, u.y);
         const want = c.demandMW;
-        const give = Math.min(want, pool);
+        const give = Math.min(want, pool, lineCap(s, c.customerId), regRem[reg] ?? Infinity);
         c.deliveredMW = give;
         c.shortfallMW = Math.max(0, want - give);
         pool -= give;
         contracted += give;
         shortfallTotal += c.shortfallMW;
+        if (regRem[reg] !== undefined)
+            regRem[reg] -= give;
     }
     for (const c of s.contracts)
         if (!active.includes(c)) {
@@ -104,25 +115,31 @@ export function allocate(s, dt, spotSoldFn) {
             c.shortfallMW = 0;
             c.demandMW = 0;
         }
-    // buy from the market to cover obligations if allowed (limited by remaining connection capacity)
     let bought = 0;
     if (m.autoBuy && shortfallTotal > 0.01) {
-        bought = Math.min(shortfallTotal, Math.max(0, g.exportCapMW - contracted));
-        let left = bought;
+        // buying covers only what the customer's line and substation could still carry
+        let left = Math.min(shortfallTotal, Math.max(0, g.exportCapMW - contracted));
         for (const c of active) {
             if (left <= 0)
                 break;
-            const add = Math.min(c.shortfallMW, left);
+            const u = s.customers.find((x) => x.id === c.customerId), reg = regionOf(u.x, u.y);
+            const room = Math.min(lineCap(s, c.customerId) - c.deliveredMW, (regRem[reg] ?? Infinity));
+            const add = Math.min(c.shortfallMW, left, Math.max(0, room));
+            if (add <= 0)
+                continue;
             c.deliveredMW += add;
             c.shortfallMW -= add;
             left -= add;
             contracted += add;
+            bought += add;
+            if (regRem[reg] !== undefined)
+                regRem[reg] -= add;
         }
         shortfallTotal -= bought;
     }
-    // surplus goes to the spot market (minus the reserve the player wants to keep)
     let spot = 0, unsold = 0;
-    const surplus = Math.max(0, pool - wantReserve);
+    let surplus = Math.max(0, pool - wantReserve);
+    surplus -= batteryCharge(s, surplus, m.spotPrice, dt);
     if (m.sellSurplus && surplus > 0.01 && g.breakerClosed) {
         spot = spotSoldFn(surplus, Math.max(0, g.exportCapMW - contracted));
         unsold = surplus - spot;
@@ -133,6 +150,6 @@ export function allocate(s, dt, spotSoldFn) {
     g.spotMW = spot;
     g.boughtMW = bought;
     g.unservedMW = shortfallTotal;
-    g.reserveMW = Math.max(0, pool - surplus) + unsold;
+    g.reserveMW = Math.max(0, pool - Math.max(0, pool - wantReserve)) + unsold;
     return { contracts: contracted, spot, bought, unserved: shortfallTotal, surplusUnsold: unsold };
 }

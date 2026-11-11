@@ -5,6 +5,8 @@ import { fire, hire, scheduleMaintenance, stepMaintenance, train } from "./maint
 import { bonus, stepPlant } from "./powerGrid.js";
 import { doScram, resetScram } from "./reactorModel.js";
 import { buyUpgrade, startResearch, stepResearch } from "./research.js";
+import { stepWorld } from "./world/world.js";
+import { worldDispatch } from "./world/actions.js";
 import { MIN_PER_DAY, addLedger, clamp, log, sumExpense, sumIncome } from "./util.js";
 /** Advance the whole simulation by `dt` minutes. Every subsystem reads and writes the same GameState. */
 export function step(s, dt = 1) {
@@ -12,6 +14,7 @@ export function step(s, dt = 1) {
     stepMaintenance(s, dt);
     stepPlant(s, dt);
     stepEconomy(s, dt);
+    stepWorld(s, dt);
     stepEvents(s, dt);
     stepSafety(s, dt);
     stepResearch(s, dt);
@@ -158,7 +161,16 @@ export function dispatch(s, a) {
             s.inventory.spares += q;
             return ok(`Bought ${q} kits`);
         }
-        case "buySupplies": return no("Not used in this version");
+        case "buySupplies": {
+            const q = clamp(Math.floor(a.qty), 1, 200);
+            const cost = q * 900 * 2.2 * (1 + (s.flags.inflation ?? 0));
+            if (s.finance.cash < cost && s.settings.mode !== "sandbox")
+                return no("Not enough cash");
+            addLedger(s, "supplies", -cost, "Emergency supplies bought at spot price");
+            s.inventory.supplies += q;
+            return ok(`Bought ${q} supply batches (emergency price, 2.2x)`);
+        }
+        case "world": return worldDispatch(s, a.cmd);
         case "startResearch": return fromErr(startResearch(s, a.id));
         case "buyUpgrade": return fromErr(buyUpgrade(s, a.id), "Installed");
         case "takeLoan": {

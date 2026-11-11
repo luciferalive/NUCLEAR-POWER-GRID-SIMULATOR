@@ -1,3 +1,4 @@
+import { createWorld } from "../simulation/world/world.js";
 import { SAVE_VERSION } from "../simulation/scenarios.js";
 import type { GameState } from "../simulation/types.js";
 
@@ -36,6 +37,8 @@ type Migration = (raw: Record<string, any>) => void;
 /** Each entry upgrades a save from version N to N+1. Never edit old entries: add a new one when the state shape changes. */
 export const MIGRATIONS: Record<number, Migration> = {
   // 0 -> 1: saves made before versioning (defensive: fill every field the engine expects)
+  // 1 -> 2: Living World expansion. Builds the world around the existing game; nothing from the old save is removed.
+  1: (r) => { r.inventory ??= { spares: 20, supplies: 0 }; r.inventory.supplies ??= 0; r.inventory.supplies = Math.max(r.inventory.supplies, 40); r.inventory.components ??= 4; r.inventory.materials ??= 0; createWorld(r as never); r.flags.signed ??= 1; },
   0: (r) => { r.flags ??= {}; r.flags.staffRatio ??= 1; r.flags.growth ??= 0; r.flags.inflation ??= 0; r.objectives ??= []; r.hourly ??= []; r.eventHistory ??= []; },
 };
 export function migrate(raw: any): GameState {

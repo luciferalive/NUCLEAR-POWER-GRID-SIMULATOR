@@ -1,9 +1,10 @@
+import { createWorld } from "./world/world.js";
 import { DIFFICULTY, EXPORT_CAP, PNOM } from "./constants.js";
 import { makeContract } from "./economyEngine.js";
 import { makeEquipment, newEmployee } from "./maintenanceEngine.js";
 import { stepPlant } from "./powerGrid.js";
 import { MIN_PER_DAY } from "./util.js";
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const CUSTOMERS = [
     { id: "steel", name: "Ironvale Steelworks", industry: "steel", region: "North", peakMW: 120, loadShape: "steel", credit: 0.9, reservation: 52, x: 640, y: 230 },
     { id: "alu", name: "Polar Aluminium Smelter", industry: "aluminium", region: "North", peakMW: 95, loadShape: "flat", credit: 0.8, reservation: 46, x: 760, y: 140 },
@@ -32,7 +33,7 @@ export function createGame(opts = {}) {
         market: { spotPrice: 55, spotSoldMW: 0, spotBoughtMW: 0, regionalDemand: 1500, competitorSupply: 1500, exportCapMW: EXPORT_CAP, priceHistory: [], forecast: [], autoBuy: false, sellSurplus: true, reserveMW: 0, basePrice: 55 },
         finance: { cash, debt: 120_000_000, interestRate: 0.055, loans: [{ id: 1, principal: 120_000_000, rate: 0.055 }], ledger: [], totals: {}, day: {}, month: {}, year: {}, prevDay: {}, prevMonth: {}, dailyHistory: [], assets: 190_000_000, invoices: [], reputation: 70 },
         customers: CUSTOMERS.map((c) => ({ ...c })), contracts: [], offers: [], equipment: makeEquipment(), staff: [], nextEmployeeId: 1,
-        inventory: { spares: 20, supplies: 0 }, research: { done: [], current: null, progressDays: 0, budgetPerDay: 0 }, upgrades: [],
+        inventory: { spares: 20, supplies: 40, components: 4, materials: 0 }, research: { done: [], current: null, progressDays: 0, budgetPerDay: 0 }, upgrades: [],
         events: [], nextEventId: 1, eventHistory: [], weather: { temp: 16, wind: 6, sun: 0.4, rain: 0, kind: "sunny", changeT: 600 },
         safety: { compliance: 88, safetyScore: 90, incidents: [], nextInspectionT: 40 * MIN_PER_DAY, fines: 0, licenceOk: true, drillsDoneT: -5 * MIN_PER_DAY, backupPowerReady: true },
         log: [], alarms: {}, hourly: [], objectives: [],
@@ -64,7 +65,9 @@ export function createGame(opts = {}) {
         s.t++;
         stepPlant(s, 1);
     }
+    s.world = undefined;
     s.t = 6 * 60;
+    createWorld(s);
     s.log = [];
     s.alarms = {};
     s.stats.scrams = 0;

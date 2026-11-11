@@ -1,5 +1,6 @@
 import { DIFFICULTY, FUEL_COST_PER_MWT_DAY, LOAD_SHAPES, PNOM, REGION_SHAPE, WATER_PRICE } from "./constants.js";
 import { allocate, bonus } from "./powerGrid.js";
+import { adminMul, demandMult, fuelIdx, lineOf, wasteWeather, worldAssets } from "./world/world.js";
 import { nextRandom, randRange, pick } from "./rng.js";
 import type { Contract, CustomerProfile, GameState, Invoice, Offer } from "./types.js";
 import { MIN_PER_DAY, addLedger, clamp, day, dayOfYear, hourOfDay, log, relax, sumExpense, sumIncome } from "./util.js";
@@ -54,7 +55,7 @@ export function regionalDemand(s: GameState, hour = hourOfDay(s.t), temp = s.wea
   const h0 = Math.floor(hour) % 24, f = hour - Math.floor(hour);
   const shape = REGION_SHAPE[h0] * (1 - f) + REGION_SHAPE[(h0 + 1) % 24] * f;
   const surge = s.events.filter((e) => !e.resolved && e.effects.demandSurge && s.t < e.endT).reduce((a, e) => a + e.effects.demandSurge, 0);
-  return 2300 * shape * season * weather * (1 + (s.flags.growth ?? 0)) * (1 + surge);
+  return 2300 * shape * season * weather * (1 + (s.flags.growth ?? 0)) * (1 + surge) * (s.world?.econ.demandIdx ?? 1);
 }
 export function spotPriceFor(s: GameState, demand: number, supply: number): number {
   const vol = DIFFICULTY[s.settings.difficulty].volatility;
@@ -83,7 +84,7 @@ export function customerDemand(s: GameState, c: CustomerProfile): number {
   const ev = s.events.filter((e) => !e.resolved && s.t < e.endT && e.effects[`cust:${c.id}`] !== undefined).reduce((a, e) => a * e.effects[`cust:${c.id}`], 1);
   const growth = c.industry === "residential" ? 1 + (s.flags.growth ?? 0) : 1;
   const weather = c.industry === "residential" ? 1 + 0.012 * Math.max(0, s.weather.temp - 27) + 0.01 * Math.max(0, 4 - s.weather.temp) : 1;
-  return c.peakMW * k * ev * growth * weather;
+  return c.peakMW * k * ev * growth * weather * demandMult(s, c);
 }
 export function makeContract(s: GameState, o: { customerId: string; capacityMW: number; price: number; days: number; priority: 1 | 2 | 3 | 4 | 5 }): Contract {
   const n = s.contracts.length + 1;
@@ -101,8 +102,9 @@ export function generateOffers(s: GameState) {
   const open = s.offers.filter((o) => o.status === "open");
   if (open.length >= 5) return;
   const busy = new Set([...s.contracts.filter((c) => c.active).map((c) => c.customerId), ...open.map((o) => o.customerId)]);
-  const free = s.customers.filter((c) => !busy.has(c.id));
-  const pool = free.length ? free : s.customers.filter((c) => !open.some((o) => o.customerId === c.id));
+  const linked = s.customers.filter((c) => lineOf(s, c.id)?.status !== "planned" && s.world.intel[c.id]?.state !== "switching");
+  const free = linked.filter((c) => !busy.has(c.id));
+  const pool = free.length ? free : linked.filter((c) => !open.some((o) => o.customerId === c.id));
   if (!pool.length) return;
   const c = pick(s, pool);
   const cap = Math.max(10, Math.round((c.peakMW * randRange(s, 0.45, 0.85)) / 5) * 5);
@@ -130,7 +132,7 @@ export function acceptOffer(s: GameState, offerId: string, price?: number): stri
   if (!o) return "Offer is no longer open";
   const p = price ?? o.lastCounter ?? o.asking;
   s.contracts.push(makeContract(s, { customerId: o.customerId, capacityMW: o.capacityMW, price: p, days: o.days, priority: o.priority }));
-  o.status = "accepted";
+  o.status = "accepted"; s.flags.signed = (s.flags.signed ?? 0) + 1;
   const c = s.customers.find((x) => x.id === o.customerId)!;
   log(s, "notice", "sales", `Contract signed with ${c.name}: ${o.capacityMW} MW at $${p.toFixed(2)}/MWh for ${o.days} days.`);
   return null;
@@ -141,7 +143,7 @@ export function stepEconomy(s: GameState, dt: number) {
   const m = s.market, g = s.grid, f = s.finance, diff = DIFFICULTY[s.settings.difficulty];
   stepWeather(s);
   m.regionalDemand = regionalDemand(s);
-  m.competitorSupply = competitorSupply(s);
+  m.competitorSupply = s.world.compSupplyMW;
   m.exportCapMW = g.exportCapMW;
   g.demandMW = 0;
   for (const c of s.contracts) {
@@ -185,8 +187,8 @@ export function stepEconomy(s: GameState, dt: number) {
 
   // running costs
   const costScale = 1 + bonus(s, "costs") + (s.flags.inflation ?? 0);
-  addLedger(s, "fuel", -s.reactor.n * PNOM * dt * FUEL_PER_MWT_MIN * costScale, "Fuel consumption");
-  addLedger(s, "water", -s.cooling.waterUseM3h * hours * WATER_PRICE * costScale, "Cooling water and treatment");
+  addLedger(s, "fuel", -s.reactor.n * PNOM * dt * FUEL_PER_MWT_MIN * costScale * fuelIdx(s), "Fuel consumption");
+  addLedger(s, "water", -s.cooling.waterUseM3h * hours * WATER_PRICE * costScale * wasteWeather(s), "Cooling water and treatment");
   if (!s.flags.coolingCostOnly) addLedger(s, "waste", -(0.002 * PNOM * s.reactor.n) * dt * costScale, "Waste management");
 
   // hourly record
@@ -211,7 +213,7 @@ function dailyRollover(s: GameState, payDelay: number) {
   const assets = f.assets;
   addLedger(s, "salaries", -salaries, "Daily salaries");
   addLedger(s, "insurance", -(assets * 0.00012), "Insurance premium");
-  addLedger(s, "administration", -(26000 + 120 * s.staff.length), "Administration");
+  addLedger(s, "administration", -(26000 + 120 * s.staff.length) * adminMul(s), "Administration");
   addLedger(s, "compliance", -(14000 + (100 - s.safety.compliance) * 450), "Regulatory compliance");
   if (s.research.current) addLedger(s, "research", -s.research.budgetPerDay, "Research & development");
   let interest = 0;
@@ -240,7 +242,7 @@ function dailyRollover(s: GameState, payDelay: number) {
   s.stats.todayMWh = 0;
   if (d % 360 === 0) { f.year = {}; s.stats.yearMWh = 0; }
   // asset value = book value of equipment + cash-independent plant value
-  f.assets = 180_000_000 + s.equipment.reduce((a, e) => a + (e.condition / 100) * e.replaceCost * 0.4, 0) + (s.upgrades.length * 4_000_000);
+  f.assets = 180_000_000 + s.equipment.reduce((a, e) => a + (e.condition / 100) * e.replaceCost * 0.4, 0) + (s.upgrades.length * 4_000_000) + worldAssets(s);
 }
 
 function monthlyRollover(s: GameState, payDelay: number) {

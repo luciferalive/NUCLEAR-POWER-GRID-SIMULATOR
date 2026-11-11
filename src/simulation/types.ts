@@ -1,5 +1,6 @@
 /** Central, serialisable game state. Everything the UI shows is read from here; everything that changes it goes through engine.ts. */
 
+import type { WorldCmd, WorldState } from "./world/types.js";
 export type Difficulty = "beginner" | "normal" | "advanced" | "expert" | "hardcore";
 export type GameMode = "career" | "sandbox" | "challenge" | "crisis" | "realistic";
 export type Severity = "info" | "notice" | "warning" | "alarm" | "critical";
@@ -162,7 +163,7 @@ export interface GameState {
   equipment: Equipment[];
   staff: Employee[];
   nextEmployeeId: number;
-  inventory: { spares: number; supplies: number };
+  inventory: { spares: number; supplies: number; components: number; materials: number } & Record<string, number>;
   research: ResearchState;
   upgrades: string[];
   events: ActiveEvent[];
@@ -176,6 +177,7 @@ export interface GameState {
   objectives: Objective[];
   stats: Stats;
   flags: Record<string, number>;
+  world: WorldState;
 }
 
 export interface GridState {
@@ -208,5 +210,5 @@ export type Action =
   | { type: "startResearch"; id: string } | { type: "buyUpgrade"; id: string }
   | { type: "takeLoan"; amount: number } | { type: "repayLoan"; id: number }
   | { type: "resolveEvent"; id: number; option: string } | { type: "ackAlarm"; key: string } | { type: "ackAll" }
-  | { type: "refuel" } | { type: "drill" } | { type: "setSetting"; key: keyof Settings; value: unknown }
+  | { type: "world"; cmd: WorldCmd } | { type: "refuel" } | { type: "drill" } | { type: "setSetting"; key: keyof Settings; value: unknown }
  ;

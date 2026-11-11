@@ -1,3 +1,4 @@
+import { createWorld } from "./world/world.js";
 import { DIFFICULTY, EXPORT_CAP, PNOM } from "./constants.js";
 import { makeContract } from "./economyEngine.js";
 import { makeEquipment, newEmployee } from "./maintenanceEngine.js";
@@ -5,7 +6,7 @@ import { stepPlant } from "./powerGrid.js";
 import type { CustomerProfile, Difficulty, GameMode, GameState, Role } from "./types.js";
 import { MIN_PER_DAY } from "./util.js";
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export const CUSTOMERS: CustomerProfile[] = [
   { id: "steel", name: "Ironvale Steelworks", industry: "steel", region: "North", peakMW: 120, loadShape: "steel", credit: 0.9, reservation: 52, x: 640, y: 230 },
@@ -26,7 +27,7 @@ export function createGame(opts: { difficulty?: Difficulty; mode?: GameMode; see
   const difficulty = opts.difficulty ?? "beginner", mode = opts.mode ?? "career", seed = opts.seed ?? 20260101;
   const d = DIFFICULTY[difficulty];
   const cash = mode === "sandbox" ? 999_000_000 : mode === "crisis" ? 6_000_000 : mode === "realistic" ? Math.round(d.startCash * 0.5) : d.startCash;
-  const s: GameState = {
+  const s = {
     version: SAVE_VERSION, t: 0, rngState: seed,
     settings: { difficulty, mode, speed: 1, paused: true, volMaster: 0.7, volAmbience: 0.5, volEquipment: 0.6, volAlarms: 0.8, volUi: 0.5, muted: false, autosave: true, tutorialStep: 0, tutorialDone: false, tooltips: true, companyName: opts.company ?? "Meridian Nuclear Power", seed },
     reactor: { rod: 0.74, rodTarget: 0.74, autoRods: true, n: 0.85, xenon: 0.5, tFuel: 620, tCool: 298, pressure: 155, flowFrac: 1, pumps: [{ id: "RCP-A", on: true, speed: 0.83, flow: 0.33 }, { id: "RCP-B", on: true, speed: 0.83, flow: 0.33 }, { id: "RCP-C", on: true, speed: 0.83, flow: 0.33 }],
@@ -37,13 +38,13 @@ export function createGame(opts: { difficulty?: Difficulty; mode?: GameMode; see
     market: { spotPrice: 55, spotSoldMW: 0, spotBoughtMW: 0, regionalDemand: 1500, competitorSupply: 1500, exportCapMW: EXPORT_CAP, priceHistory: [], forecast: [], autoBuy: false, sellSurplus: true, reserveMW: 0, basePrice: 55 },
     finance: { cash, debt: 120_000_000, interestRate: 0.055, loans: [{ id: 1, principal: 120_000_000, rate: 0.055 }], ledger: [], totals: {}, day: {}, month: {}, year: {}, prevDay: {}, prevMonth: {}, dailyHistory: [], assets: 190_000_000, invoices: [], reputation: 70 },
     customers: CUSTOMERS.map((c) => ({ ...c })), contracts: [], offers: [], equipment: makeEquipment(), staff: [], nextEmployeeId: 1,
-    inventory: { spares: 20, supplies: 0 }, research: { done: [], current: null, progressDays: 0, budgetPerDay: 0 }, upgrades: [],
+    inventory: { spares: 20, supplies: 40, components: 4, materials: 0 }, research: { done: [], current: null, progressDays: 0, budgetPerDay: 0 }, upgrades: [],
     events: [], nextEventId: 1, eventHistory: [], weather: { temp: 16, wind: 6, sun: 0.4, rain: 0, kind: "sunny", changeT: 600 },
     safety: { compliance: 88, safetyScore: 90, incidents: [], nextInspectionT: 40 * MIN_PER_DAY, fines: 0, licenceOk: true, drillsDoneT: -5 * MIN_PER_DAY, backupPowerReady: true },
     log: [], alarms: {}, hourly: [], objectives: [],
     stats: { totalMWh: 0, todayMWh: 0, monthMWh: 0, yearMWh: 0, contractMWh: 0, spotMWh: 0, unservedMWh: 0, boughtMWh: 0, scrams: 0, uptimeMin: 0, lastDay: 0, lastMonth: 0, lastYear: 0, profitableMonths: 0, peakNetMW: 0 },
     flags: { staffRatio: 1, staffQuality: 0.8, growth: 0, inflation: 0 },
-  };
+  } as unknown as GameState;
   for (const [role, n] of STAFF) for (let i = 0; i < n; i++) { const e = newEmployee(s, role, 2 + ((i * 5) % 11)); e.cert = true; e.training = 0.7; s.staff.push(e); }
   for (const [cid, cap, price, prio] of [["steel", 70, 53, 2], ["resid", 80, 57, 1], ["dc", 35, 64, 2], ["cement", 25, 55, 3], ["mfg", 25, 60, 3]] as const)
     s.contracts.push(makeContract(s, { customerId: cid, capacityMW: cap, price, days: 400, priority: prio }));
@@ -53,7 +54,7 @@ export function createGame(opts: { difficulty?: Difficulty; mode?: GameMode; see
   // settle the plant into a steady state before the first minute is played (does not touch money or stats)
   s.t = 0;
   for (let i = 0; i < 4000; i++) { s.t++; stepPlant(s, 1); }
-  s.t = 6 * 60; s.log = []; s.alarms = {}; s.stats.scrams = 0; s.safety.incidents = []; s.reactor.burnup = mode === "crisis" ? 0.8 : 0.25;
+  s.world = undefined as never; s.t = 6 * 60; createWorld(s); s.log = []; s.alarms = {}; s.stats.scrams = 0; s.safety.incidents = []; s.reactor.burnup = mode === "crisis" ? 0.8 : 0.25;
   s.log.push({ t: s.t, sev: "info", cat: "system", msg: `Welcome, director. ${s.settings.companyName} is online at ${(s.grid.netMW).toFixed(0)} MW net. The clock is paused: press Play when ready.` });
   return s;
 }

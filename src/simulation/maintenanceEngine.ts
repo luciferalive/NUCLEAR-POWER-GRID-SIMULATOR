@@ -1,6 +1,7 @@
 import { DIFFICULTY, MIN_STAFF, ROLE_LABEL, SALARY } from "./constants.js";
 import { bonus } from "./powerGrid.js";
 import { nextRandom, pick, randInt } from "./rng.js";
+import { contractor, extraJobs } from "./world/world.js";
 import type { Employee, Equipment, GameState, Role } from "./types.js";
 import { MIN_PER_DAY, addLedger, clamp, day, eq, log, setAlarm } from "./util.js";
 
@@ -61,7 +62,7 @@ export function staffMetrics(s: GameState) {
   const ops = s.staff.filter((e) => e.role === "operator");
   const quality = ops.length ? ops.reduce((a, e) => a + e.perf * (e.cert ? 1 : 0.8) * (1 - 0.4 * e.fatigue), 0) / ops.length : 0.3;
   const techs = (count.electrician ?? 0) + (count.mechanic ?? 0) + (count.maintenance ?? 0);
-  return { count, ratio, quality: clamp(quality, 0, 1.2), techs, maxJobs: Math.max(1, Math.round(techs / 3)), monthly: s.staff.reduce((a, e) => a + e.salary, 0) };
+  return { count, ratio, quality: clamp(quality, 0, 1.2), techs, maxJobs: Math.max(1, Math.round(techs / 3)) + extraJobs(s), monthly: s.staff.reduce((a, e) => a + e.salary, 0) };
 }
 
 export function stepMaintenance(s: GameState, dt: number) {
@@ -117,11 +118,13 @@ export function scheduleMaintenance(s: GameState, id: string, kind: keyof typeof
   if (s.equipment.filter((x) => x.status === "maintenance").length >= m.maxJobs) return `Not enough technicians: only ${m.maxJobs} job(s) at a time. Hire electricians, mechanics or maintenance workers.`;
   if (e.status === "failed" && kind === "inspection") return "A failed unit needs a repair, overhaul or replacement";
   if (!s.flags.safeToMaintain && ["RCP-A", "RCP-B", "RCP-C"].includes(id) && s.reactor.pumps.filter((p) => p.flow > 0).length <= 1 && s.reactor.n > 0.05 && !e.status.includes("failed")) return "Keep at least two pumps running while the reactor is producing power";
-  const cost = kind === "replace" ? e.replaceCost : e.maintCost * k.costMul;
+  const con = contractor(s);
+  let cost = (kind === "replace" ? e.replaceCost : e.maintCost * k.costMul) * con.costMul;
+  if (kind === "replace") { if ((s.inventory.components ?? 0) >= 1) { s.inventory.components -= 1; cost *= 0.6; } else cost *= 1.15; }
   let extra = 0;
   if (s.inventory.spares >= k.spares) s.inventory.spares -= k.spares; else { extra = (k.spares - s.inventory.spares) * 14_000 * 2; s.inventory.spares = 0; }
   addLedger(s, "maintenance", -(cost + extra), `${k.label} ${e.name}`);
-  e.status = "maintenance"; e.maintKind = kind; e.maintTotalMin = e.maintLeftMin = k.hours * 60;
+  e.status = "maintenance"; e.maintKind = kind; e.maintTotalMin = e.maintLeftMin = k.hours * 60 * con.hoursMul * (1 - 0.1 * Math.min(1, s.world.buildings.workshop));
   e.history.push({ t: s.t, what: `${k.label} started` });
   log(s, "notice", "maintenance", `${k.label} of ${e.name} started (${k.hours} h).`);
   return null;

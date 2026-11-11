@@ -5,6 +5,8 @@ import { fire, hire, scheduleMaintenance, stepMaintenance, train } from "./maint
 import { bonus, stepPlant } from "./powerGrid.js";
 import { doScram, resetScram } from "./reactorModel.js";
 import { buyUpgrade, startResearch, stepResearch } from "./research.js";
+import { stepWorld } from "./world/world.js";
+import { worldDispatch } from "./world/actions.js";
 import type { Action, GameState } from "./types.js";
 import { MIN_PER_DAY, addLedger, clamp, log, sumExpense, sumIncome } from "./util.js";
 
@@ -14,6 +16,7 @@ export function step(s: GameState, dt = 1) {
   stepMaintenance(s, dt);
   stepPlant(s, dt);
   stepEconomy(s, dt);
+  stepWorld(s, dt);
   stepEvents(s, dt);
   stepSafety(s, dt);
   stepResearch(s, dt);
@@ -56,7 +59,8 @@ export function dispatch(s: GameState, a: Action): Result {
     case "train": return fromErr(train(s, a.id), "Training completed");
     case "setShift": { const e = s.staff.find((x) => x.id === a.id); if (e) e.shift = a.shift; return ok(); }
     case "buySpares": { const q = clamp(Math.floor(a.qty), 1, 200); const cost = q * 14_000 * (1 + (s.flags.inflation ?? 0)); if (s.finance.cash < cost && s.settings.mode !== "sandbox") return no("Not enough cash"); addLedger(s, "spare-parts", -cost, `Bought ${q} spare-part kits`); s.inventory.spares += q; return ok(`Bought ${q} kits`); }
-    case "buySupplies": return no("Not used in this version");
+    case "buySupplies": { const q = clamp(Math.floor(a.qty), 1, 200); const cost = q * 900 * 2.2 * (1 + (s.flags.inflation ?? 0)); if (s.finance.cash < cost && s.settings.mode !== "sandbox") return no("Not enough cash"); addLedger(s, "supplies", -cost, "Emergency supplies bought at spot price"); s.inventory.supplies += q; return ok(`Bought ${q} supply batches (emergency price, 2.2x)`); }
+    case "world": return worldDispatch(s, a.cmd);
     case "startResearch": return fromErr(startResearch(s, a.id));
     case "buyUpgrade": return fromErr(buyUpgrade(s, a.id), "Installed");
     case "takeLoan": { const f = s.finance; if (a.amount <= 0) return no("Enter an amount"); if (f.debt + a.amount > f.assets * 0.9) return no("Debt would exceed 90 % of company assets"); const id = Math.max(0, ...f.loans.map((l) => l.id)) + 1; f.loans.push({ id, principal: a.amount, rate: f.interestRate + 0.01 }); f.debt += a.amount; f.cash += a.amount; f.totals.loan = (f.totals.loan ?? 0) + a.amount; log(s, "info", "finance", `Loan taken: ${a.amount.toLocaleString()}.`); return ok(); }
