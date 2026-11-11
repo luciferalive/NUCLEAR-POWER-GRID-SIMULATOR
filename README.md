@@ -1,56 +1,81 @@
-# Nuclear Power Grid Simulator
+<div align="center">
 
-A free, open-source browser game where you run a **fictional** nuclear power company: keep the plant safe, keep customers supplied, and keep the company profitable.
+# ☢️ NUCLEAR POWER GRID SIMULATOR
 
-**Everything is a simplified, made-up model for fun and learning. It is not engineering guidance, and none of the numbers or procedures are real operating data.**
+### Run a power company. Keep the lights on. Don't melt down the profits.
 
-## How to play
+*A free, no-install, browser-based management game about running a (fictional) nuclear plant, selling electricity, and surviving the grid.*
 
-### Step A: open the game (pick one)
-**Online (easiest):** turn on GitHub Pages once: repo → Settings → Pages → Source "Deploy from a branch" → branch `main`, folder `/docs` → Save. After about a minute the game is at:
-https://luciferalive.github.io/NUCLEAR-POWER-GRID-SIMULATOR/
+![status](https://img.shields.io/badge/status-V1%20playable%20%7C%20V2%20in%20progress-f0b43c?style=for-the-badge)
+![stack](https://img.shields.io/badge/TypeScript-no%20install-3178c6?style=for-the-badge&logo=typescript&logoColor=white)
+![tests](https://img.shields.io/badge/engine%20tests-15%20passing-2fe0c4?style=for-the-badge)
+![cost](https://img.shields.io/badge/price-free%20%26%20open%20source-3fd0a0?style=for-the-badge)
 
-**On your laptop:** download the repo (green Code button → Download ZIP), unzip it, open a terminal inside the `docs` folder and run `python -m http.server 8000`, then open http://localhost:8000 in Chrome. (Double-clicking index.html will not work, browsers block it.)
+**[▶ PLAY IN YOUR BROWSER](https://luciferalive.github.io/NUCLEAR-POWER-GRID-SIMULATOR/)** &nbsp;·&nbsp; [How to play](#-how-to-play) &nbsp;·&nbsp; [Features](#-features) &nbsp;·&nbsp; [Roadmap](#-roadmap-and-honest-status)
 
-### Step B: your first 10 minutes
-1. Click **New game**. Choose Career + Beginner and press Start. The game starts PAUSED.
-2. Press **1x** at the top to start the clock. 1x means 2 game minutes per real second; 10x is fastest. Pause any time.
-3. Follow the yellow-green **Tutorial** box at the top right. It has 8 steps and checks that you did each one.
-4. Open **Industrial Customers** and accept an offer. You can propose a higher price first.
-5. Watch **Overview** for cash, output, alarms. Green = fine, red = act now.
-6. Every few game days open **Maintenance** and inspect worn equipment, and check **Personnel** has enough staff.
-7. Settings → **Save Manager** to save to a slot (autosave runs every minute).
+</div>
 
-### Rules of thumb
-- Turbine Hall set point = how much electricity you want. The reactor follows it automatically.
-- Keep temperature, pressure and coolant flow inside limits, or the reactor shuts down itself (SCRAM). After a SCRAM, wait: it takes hours to restart.
-- Contracts pay steadily but punish shortages. Spot market pays the current price.
-- Skipping maintenance saves money now and costs far more when things break.
-- Goal in Career mode: 3 profitable months, supply 7 customers, reputation 85.
+---
 
-## About playing it
-Open `docs/index.html` through any web server, or enable GitHub Pages (Settings → Pages → branch `main`, folder `/docs`) and open the page link.
+> ⚠️ **Everything here is fictional and simplified.** The physics, numbers and "procedures" are game abstractions for fun and learning. They are **not** real engineering data or operating guidance.
 
-No installation is needed to play. Progress is saved in your browser (IndexedDB); you can also export and import save files.
+## 🎮 What is this?
 
-## What is in the game (Stage 1 = "Version 1")
-18 screens, all driven by one shared simulation: Overview, Facility Map, Reactor Room, Control Room, Turbine Hall, Cooling, Electrical Grid, Electricity Market, Industrial Customers (contracts, negotiation, priorities, invoices), Finance, Maintenance, Personnel, Research, Safety & Emergency, Reports (CSV export), Upgrades, Settings & Save Manager, Tutorial & Manual.
+You are the director of a nuclear power company. Your reactor makes heat, the turbine turns heat into electricity, and you sell that electricity to steel mills, data centers, cities and the spot market. Every system is connected: change one slider and reactor power, heat, generation, sales, revenue and wear all move together. **No fake numbers, no decorative buttons.**
 
-Linked on purpose: changing the turbine set point moves reactor power, heat, generation, sales and revenue; a failed pump cuts coolant flow; understaffing raises wear; late deliveries cost penalties and reputation.
+## ✨ Features
 
-Five modes (Career, Sandbox, Challenge, Crisis, Realistic) and five difficulty levels.
+| 🏭 Plant | 💰 Business | 🛠️ Management |
+|---|---|---|
+| Reactor with rods, xenon, feedback and decay heat | 10 industrial customers with daily load shapes | 14 equipment items that wear and fail |
+| Turbine, generator and cooling tower | Contract offers and price negotiation (3 rounds) | Inspections, repairs, overhauls, replacements |
+| Auto SCRAM protection + manual SCRAM | Priority supply and shortfall penalties | Staff with roles, fatigue, training, shifts |
+| Electrical grid, losses, frequency | Spot market driven by supply and demand | 10 research projects and 4 hardware upgrades |
+| Live 15-building facility map | Invoices, receivables, loans, monthly accounts | Random events with real decisions to make |
 
-## Honest status
-Done and tested: simulation engine (15 automated tests), all 18 screens (browser smoke-tested for errors, set points, offers, SCRAM, save and load), procedural sound.
+**Also included:** 18 screens · procedural industrial soundscape · guided tutorial · 5 game modes (Career, Sandbox, Challenge, Crisis, Realistic) · 5 difficulties · save slots, autosave, export/import · CSV reports.
 
-Known gaps:
-- The **V2 "Living World" expansion** (world map, regions, transmission, competitors, construction, batteries, news, achievements) is **not built yet**.
-- Buying supplies is not used in this version.
-- Charts are empty during the first simulated hours of a new game while history builds up.
-- Not yet tested on phones or in browsers other than Chromium.
+## 🕹️ How to play
 
-## Develop
+### 1️⃣ Open the game (pick one)
+**🌐 Online (easiest)** — turn on GitHub Pages once: repo → **Settings → Pages → Deploy from a branch → `main` / `/docs` → Save**. After about a minute play at  
+👉 https://luciferalive.github.io/NUCLEAR-POWER-GRID-SIMULATOR/
+
+**💻 On your laptop** — download the repo (Code → Download ZIP), unzip, open a terminal inside the `docs` folder, run `python -m http.server 8000`, then open <http://localhost:8000> in Chrome. *(Double-clicking `index.html` will not work: browsers block it.)*
+
+### 2️⃣ Your first 10 minutes
+1. Click **New game** → Career + Beginner → **Start**. The game starts **paused**.
+2. Press **1x** at the top to start the clock (10x is fastest). Pause any time.
+3. Follow the **Tutorial box** (top right). It has 8 steps and checks that you did each one.
+4. Open **Industrial Customers** and accept an offer. Try proposing a higher price first!
+5. Watch the **Overview**: 🟢 fine, 🔴 act now.
+6. Every few game days, inspect worn equipment in **Maintenance** and check **Personnel** has enough crew.
+7. **Settings → Save Manager** to save (it also autosaves every minute).
+
+### 3️⃣ Rules of thumb
+- 🎚️ The **set point** (Turbine Hall) is how much electricity you want. The reactor follows automatically.
+- 🚨 If temperature, pressure or coolant flow leave their limits, the reactor **SCRAMs** itself. Restart takes hours.
+- 📜 Contracts pay steadily but punish shortages. The spot market pays today's price.
+- 🔧 Skipping maintenance saves money now and costs far more when things break.
+- 🏆 **Career goals:** 3 profitable months, supply 7 customers, reputation 85.
+
+## 🗺️ Roadmap and honest status
+
+| Stage | What | Status |
+|---|---|---|
+| **V1** | Full base game, 18 screens, tutorial, saves | ✅ **Playable and tested** |
+| **V2 "Living World"** | World map, transmission network with animated power flow, regions, competitors, world economy, weather, procurement, construction, batteries, news, achievements, expenses department, command center | 🚧 **In progress** (engine being built) |
+
+Known gaps today: V2 features are not in the game yet; charts are empty for the first simulated hour of a new game; tested only in Chromium so far.
+
+## 🧰 For developers
+```bash
+npm test      # compiles TypeScript (tsc) and runs the engine tests (node:test)
 ```
-npm test      # compiles TypeScript (global tsc) and runs the engine tests
-```
-Source is in `src/`, compiled output in `docs/js/` (committed so GitHub Pages can serve it).
+`src/simulation/` – the engine (pure TypeScript, deterministic seeded RNG) · `src/ui/` – pages and charts · `src/store/` – state and saves · `docs/` – built site served by GitHub Pages.
+
+<div align="center">
+
+**Made for fun and learning. Build it, break it, fork it.** ⚡
+
+</div>
