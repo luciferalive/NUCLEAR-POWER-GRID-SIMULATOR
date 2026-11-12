@@ -4,7 +4,7 @@ import { SPEEDS } from "./simulation/simulationClock.js";
 import { fmtTime } from "./simulation/util.js";
 import { IdbBackend, MemoryBackend, SaveManager, importText } from "./store/saves.js";
 import { store } from "./store/store.js";
-import { $, download, esc, f0, toCsv, usdM } from "./ui/dom.js";
+import { $, download, esc, morph, f0, toCsv, usdM } from "./ui/dom.js";
 import * as P1 from "./ui/pages/p1.js";
 import * as P2 from "./ui/pages/p2.js";
 import * as P3 from "./ui/pages/p3.js";
@@ -82,12 +82,16 @@ function render(force = false) {
         console.error(e);
     }
     if (force || html !== lastHtml || lastPage !== page.id) {
-        const y = main.scrollTop;
-        main.innerHTML = html;
+        const y = main.scrollTop, same = lastPage === page.id && !force;
+        if (same)
+            morph(main, html);
+        else
+            main.innerHTML = html;
         main.scrollTop = lastPage === page.id ? y : 0;
         lastHtml = html;
         lastPage = page.id;
     }
+    document.body.classList.toggle("paused", s.settings.paused);
     try {
         page.mount?.(main, s);
     }

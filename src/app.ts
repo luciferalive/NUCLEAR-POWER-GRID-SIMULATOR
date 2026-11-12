@@ -5,7 +5,7 @@ import { SPEEDS } from "./simulation/simulationClock.js";
 import { fmtTime } from "./simulation/util.js";
 import { IdbBackend, MemoryBackend, SaveManager, importText, type Backend } from "./store/saves.js";
 import { store } from "./store/store.js";
-import { $, download, esc, f0, toCsv, usdM } from "./ui/dom.js";
+import { $, download, esc, morph, f0, toCsv, usdM } from "./ui/dom.js";
 import type { Page } from "./ui/page.js";
 import * as P1 from "./ui/pages/p1.js";
 import * as P2 from "./ui/pages/p2.js";
@@ -52,7 +52,8 @@ function render(force = false) {
   if (!force && editing && lastPage === page.id) { coach(); return; }
   let html: string;
   try { html = page.render(s); } catch (e) { html = `<div class="panel"><h2>This page failed to draw</h2><pre>${esc((e as Error).stack ?? e)}</pre></div>`; console.error(e); }
-  if (force || html !== lastHtml || lastPage !== page.id) { const y = main.scrollTop; main.innerHTML = html; main.scrollTop = lastPage === page.id ? y : 0; lastHtml = html; lastPage = page.id; }
+  if (force || html !== lastHtml || lastPage !== page.id) { const y = main.scrollTop, same = lastPage === page.id && !force; if (same) morph(main, html); else main.innerHTML = html; main.scrollTop = lastPage === page.id ? y : 0; lastHtml = html; lastPage = page.id; }
+  document.body.classList.toggle("paused", s.settings.paused);
   try { page.mount?.(main, s); } catch (e) { console.error(e); }
   coach();
 }
