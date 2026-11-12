@@ -188,3 +188,4 @@ body.paused .mimic *,body.paused .bar i{animation-play-state:paused!important}
 .toast{font:16px var(--cond)}
 .lead{font:600 17px var(--cond)}
 header>*{white-space:nowrap}header .clock{font-size:19px}.hk{gap:14px}
+.scram{margin-top:12px}.deck{align-items:flex-start}

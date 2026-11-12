@@ -11,7 +11,7 @@
 ![tests](https://img.shields.io/badge/engine%20tests-31%20passing-2fe0c4?style=for-the-badge)
 ![cost](https://img.shields.io/badge/price-free%20%26%20open%20source-3fd0a0?style=for-the-badge)
 
-**[▶ PLAY IN YOUR BROWSER](https://luciferalive.github.io/NUCLEAR-POWER-GRID-SIMULATOR/)** &nbsp;·&nbsp; [How to play](#-how-to-play) &nbsp;·&nbsp; [Features](#-features) &nbsp;·&nbsp; [Roadmap](#-roadmap-and-honest-status)
+**[▶ PLAY IN YOUR BROWSER](https://luciferalive.github.io/NUCLEAR-POWER-GRID-SIMULATOR/)** &nbsp;·&nbsp; [📕 Field Guide (PDF)](docs/guide/Nuclear_Power_Grid_Simulator_Guide.pdf) &nbsp;·&nbsp; [How to play](#-how-to-play) &nbsp;·&nbsp; [Features](#-features) &nbsp;·&nbsp; [Roadmap](#-roadmap-and-honest-status)
 
 </div>
 
@@ -47,6 +47,8 @@ You are the director of a nuclear power company. Your reactor makes heat, the tu
 Old V1 saves load automatically and are upgraded to V2.
 
 ## 🕹️ How to play
+
+> 📕 **New here? Grab the illustrated [Operator's Field Guide (PDF)](docs/guide/Nuclear_Power_Grid_Simulator_Guide.pdf)**: 9 short pages covering every button, what SCRAM is and when to press it, daily routines, and a "if this, then do that" fix table.
 
 ### 1️⃣ Open the game (pick one)
 **🌐 Online (easiest)** — turn on GitHub Pages once: repo → **Settings → Pages → Deploy from a branch → `main` / `/docs` → Save**. After about a minute play at  
